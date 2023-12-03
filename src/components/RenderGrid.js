@@ -42,6 +42,7 @@ const RenderGrid = ({ data }) => {
   console.log("TEDRD");
   const [rowData, setRowData] = useState(data); // [data]
   const [searchTerm, setSearchTerm] = useState('');
+  const gridRef = React.useRef(null);
 
   useEffect(() => {
     if (!data) return;
@@ -101,8 +102,13 @@ const RenderGrid = ({ data }) => {
 
 
 
-  const filteredData = data.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = data.filter((item) => {
+    for (let key in item) {
+      if (item[key].toLowerCase().includes(searchTerm.toLowerCase())) {
+        return true;
+      }
+    }
+  }
   );
 
 
@@ -112,6 +118,20 @@ const RenderGrid = ({ data }) => {
   }, [searchTerm]);
 
 
+  const deleteSelected = () => {
+    const selectedNodes = gridRef.current.api.getSelectedNodes();
+    const selectedData = selectedNodes.map(node => node.data);
+    const modifiedRowData = rowData.map((item) => {
+      for (let i = 0; i < selectedData.length; i++) {
+        if (item.id === selectedData[i].id) {
+          item.deleted = true;
+          break;
+        }
+      }
+      return item;
+    });
+    setRowData(modifiedRowData);
+  }
 
 
   gridOptions.columnDefs = [...columns, ...actionCols];
@@ -120,11 +140,19 @@ const RenderGrid = ({ data }) => {
   return (
 
     <div style={{ display: 'grid' }}>
-      <input style={{ fontSize: '18px', height: '30px', width: '50%', marginBottom: '10px', padding: '10px', border: 'black' }} type="text" placeholder="Search" value={searchTerm} onChange={handleSearch} />
+      <div style={{ display: "flex", flexDirection: "row" }} >
+        <input style={{ fontSize: '18px', height: '30px', width: '80%', marginBottom: '10px', padding: '10px', borderRadius: '2px', border: 'black' }} type="text" placeholder="Search" value={searchTerm} onChange={handleSearch} />
+        <button style={{ backgroundColor: 'white', border: 'none', height: '48px', marginLeft: '5px', padding: '10px' }} onClick={deleteSelected}
+        // disabled={gridRef.current.api.getSelectedNodes().length === 0}
+        >
+          Delete Selected
+        </button>
+      </div>
       <div className="ag-theme-alpine" style={{ height: "90vmax", width: "98vmin", maxHeight: "36rem" }}>
         <AgGridReact
           gridOptions={gridOptions}
           rowData={rowData.filter((item) => !item.deleted)}
+          ref={gridRef}
         />
       </div>
     </div>
